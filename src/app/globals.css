@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --page-bg: #f4efe5;
+  --ink: #182129;
+  --muted-ink: #596574;
+  --panel: rgba(255, 252, 247, 0.82);
+  --panel-strong: #fffaf2;
+  --line: rgba(24, 33, 41, 0.12);
+  --brand: #166534;
+  --brand-strong: #0f5132;
+  --brand-soft: rgba(22, 101, 52, 0.12);
+  --warning: #92400e;
+}
+
+@theme inline {
+  --color-background: var(--page-bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 32%),
+    radial-gradient(circle at top right, rgba(22, 101, 52, 0.15), transparent 24%),
+    linear-gradient(180deg, #fcfaf6 0%, #f4efe5 45%, #efe7db 100%);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(22, 101, 52, 0.2);
+}
+
+.glass-panel {
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 80px rgba(24, 33, 41, 0.08);
+}
+
+.section-title {
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.status-chip {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(24, 33, 41, 0.08);
+}
