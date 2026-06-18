@@ -1,6 +1,7 @@
 import "server-only";
 
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
+import { normalizeContentText } from "@/lib/services/content-normalization";
 import { prisma } from "@/lib/db";
 
 type MonitoredPageInput = {
@@ -77,7 +78,7 @@ export async function listMonitoredPages(userId: string): Promise<MonitoredPageS
 }
 
 function normalizeKeywordPhrase(phrase: string) {
-  return phrase.trim().replace(/\s+/g, " ").toLowerCase();
+  return normalizeContentText(phrase);
 }
 
 export async function addKeywordRuleToMonitoredPage(

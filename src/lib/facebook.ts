@@ -31,6 +31,7 @@ type FacebookPageFeedResponse = {
   data?: Array<{
     id: string;
     message?: string;
+    story?: string;
     created_time?: string;
     permalink_url?: string;
     comments?: {
@@ -68,6 +69,7 @@ export type FacebookPagePostWithComments = {
   post: {
     id: string;
     message: string | null;
+    story: string | null;
     createdTime: string | null;
     permalinkUrl: string | null;
   };
@@ -148,11 +150,11 @@ export async function getPageFeedSnapshot(
   pageId: string,
   pageAccessToken: string,
 ): Promise<FacebookPageFeedSnapshot> {
-  const url = new URL(`https://graph.facebook.com/v23.0/${pageId}/posts`);
+  const url = new URL(`https://graph.facebook.com/v23.0/${pageId}/feed`);
 
   url.searchParams.set(
     "fields",
-    "id,message,created_time,permalink_url,comments.limit(50){id,message,created_time,permalink_url}",
+    "id,message,story,created_time,permalink_url,comments.limit(50){id,message,created_time,permalink_url}",
   );
   url.searchParams.set("limit", "25");
 
@@ -174,6 +176,7 @@ export async function getPageFeedSnapshot(
     post: {
       id: post.id,
       message: post.message ?? null,
+      story: post.story ?? null,
       createdTime: post.created_time ?? null,
       permalinkUrl: post.permalink_url ?? null,
     },

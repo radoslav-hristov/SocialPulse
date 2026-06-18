@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getCurrentSession } from "@/lib/auth";
 import { listManagedFacebookPages } from "@/lib/facebook";
-import { listRecentKeywordMatchesForPage } from "@/lib/services/matching-pass";
+import {
+  getMatchingCountsForPage,
+  listRecentKeywordMatchesForPage,
+} from "@/lib/services/matching-pass";
 import { listMonitoredPages } from "@/lib/services/monitored-pages";
 
 import {
@@ -19,6 +22,11 @@ import {
 type DashboardPageProps = {
   searchParams?: Promise<{
     q?: string;
+    matchingPass?: string;
+    page?: string;
+    processed?: string;
+    searched?: string;
+    matched?: string;
   }>;
 };
 
@@ -31,6 +39,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() ?? "";
+  const latestRun =
+    params.matchingPass === "1"
+      ? {
+          monitoredPageId: params.page ?? "",
+          processed: Number.parseInt(params.processed ?? "0", 10) || 0,
+          searched: Number.parseInt(params.searched ?? "0", 10) || 0,
+          matched: Number.parseInt(params.matched ?? "0", 10) || 0,
+        }
+      : null;
 
   const [monitoredPages, managedPagesResult] = await Promise.all([
     listMonitoredPages(session.user.id),
@@ -55,13 +72,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const monitoredPageIds = new Set(monitoredPages.map((page) => page.facebookPageId));
   const recentMatchesByPage = new Map<string, Awaited<ReturnType<typeof listRecentKeywordMatchesForPage>>>();
+  const matchingCountsByPage = new Map<string, Awaited<ReturnType<typeof getMatchingCountsForPage>>>();
 
   await Promise.all(
     monitoredPages.map(async (page) => {
-      const matches = await listRecentKeywordMatchesForPage(session.user.id, page.id, 6);
+      const [matches, counts] = await Promise.all([
+        listRecentKeywordMatchesForPage(session.user.id, page.id, 6),
+        getMatchingCountsForPage(session.user.id, page.id),
+      ]);
+
       recentMatchesByPage.set(page.id, matches);
+      matchingCountsByPage.set(page.id, counts);
     }),
   );
+
+  const latestRunPageName =
+    latestRun?.monitoredPageId
+      ? monitoredPages.find((page) => page.id === latestRun.monitoredPageId)?.name ?? "selected page"
+      : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-10">
@@ -96,6 +124,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <SignOutButton />
         </div>
       </header>
+
+      {latestRun ? (
+        <section className="mb-6 rounded-3xl border border-[var(--line)] bg-white/70 px-5 py-4 text-sm text-[var(--ink)]">
+          <p className="font-semibold">
+            Matching pass completed for {latestRunPageName}.
+          </p>
+          <p className="mt-1 text-[var(--muted-ink)]">
+            Processed: {latestRun.processed} | Searched: {latestRun.searched} | Matched: {latestRun.matched}
+          </p>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <article className="glass-panel flex flex-col gap-6 rounded-[2rem] px-7 py-7 sm:px-8">
@@ -341,9 +380,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                           <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--brand-strong)]">
                             Recent matches
                           </h4>
-                          <span className="text-xs text-[var(--muted-ink)]">
-                            {(recentMatchesByPage.get(page.id) ?? []).length} shown
-                          </span>
+                          <div className="text-right text-xs text-[var(--muted-ink)]">                            
+                            <div>
+                              {matchingCountsByPage.get(page.id)?.matchedCount ?? 0} matched / {matchingCountsByPage.get(page.id)?.searchedCount ?? 0} searched
+                            </div>                            
+                          </div>
                         </div>
 
                         {(recentMatchesByPage.get(page.id) ?? []).length === 0 ? (

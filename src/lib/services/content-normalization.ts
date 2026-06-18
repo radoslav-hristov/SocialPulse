@@ -15,5 +15,9 @@ export function findKeywordMatches(
   normalizedText: string,
   keywordRules: Array<{ id: string; normalizedPhrase: string; phrase: string }>,
 ) {
-  return keywordRules.filter((rule) => normalizedText.includes(rule.normalizedPhrase));
+  return keywordRules.filter((rule) => {
+    // Re-normalize the phrase to ensure consistency with content normalization
+    const actualNormalizedPhrase = normalizeContentText(rule.phrase);
+    return normalizedText.includes(actualNormalizedPhrase);
+  });
 }

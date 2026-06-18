@@ -42,12 +42,14 @@ function toCandidatesFromFeed(feed: Awaited<ReturnType<typeof getPageFeedSnapsho
   const candidates: ContentCandidate[] = [];
 
   for (const item of feed.posts) {
+    const postText = [item.post.message, item.post.story].filter(Boolean).join("\n");
+
     candidates.push({
       sourceType: MonitoredContentSourceType.POST,
       sourceId: item.post.id,
       parentSourceId: null,
       contentUrl: item.post.permalinkUrl,
-      rawText: item.post.message,
+      rawText: postText || null,
       publishedAt: parseGraphDate(item.post.createdTime),
     });
 
@@ -96,12 +98,6 @@ export async function runMatchingPassForMonitoredPage(
     summary.processedItems += 1;
     const normalizedText = normalizeContentText(candidate.rawText ?? "");
 
-    if (!normalizedText) {
-      continue;
-    }
-
-    summary.evaluatedItems += 1;
-
     const contentRecord = await prisma.monitoredContent.upsert({
       where: {
         monitoredPageId_sourceType_sourceId: {
@@ -130,7 +126,14 @@ export async function runMatchingPassForMonitoredPage(
       },
     });
 
+    if (!normalizedText) {
+      continue;
+    }
+
+    summary.evaluatedItems += 1;
+
     const matchedRules = findKeywordMatches(normalizedText, keywordRules);
+
     summary.matchedEvaluations += matchedRules.length;
 
     for (const rule of matchedRules) {
@@ -193,4 +196,38 @@ export async function listRecentKeywordMatchesForPage(
     },
     take: limit,
   });
+}
+
+export async function getMatchingCountsForPage(userId: string, monitoredPageId: string) {
+  const baseWhere = {
+    monitoredPageId,
+    monitoredPage: {
+      userId,
+    },
+  };
+
+  const [postCount, commentCount, matchedCount] = await Promise.all([
+    prisma.monitoredContent.count({
+      where: {
+        ...baseWhere,
+        sourceType: MonitoredContentSourceType.POST,
+      },
+    }),
+    prisma.monitoredContent.count({
+      where: {
+        ...baseWhere,
+        sourceType: MonitoredContentSourceType.COMMENT,
+      },
+    }),
+    prisma.keywordMatchEvent.count({ where: baseWhere }),
+  ]);
+
+  const searchedCount = postCount + commentCount;
+
+  return {
+    postCount,
+    commentCount,
+    searchedCount,
+    matchedCount,
+  };
 }

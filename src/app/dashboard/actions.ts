@@ -83,6 +83,10 @@ export async function runMatchingPassAction(formData: FormData) {
   const userId = await getRequiredUserId();
   const monitoredPageId = getRequiredString(formData, "monitoredPageId");
 
-  await runMatchingPassForMonitoredPage(userId, monitoredPageId);
+  const summary = await runMatchingPassForMonitoredPage(userId, monitoredPageId);
+
   revalidatePath("/dashboard");
+  redirect(
+    `/dashboard?matchingPass=1&page=${encodeURIComponent(monitoredPageId)}&processed=${summary.processedItems}&searched=${summary.evaluatedItems}&matched=${summary.matchedEvaluations}`,
+  );
 }
